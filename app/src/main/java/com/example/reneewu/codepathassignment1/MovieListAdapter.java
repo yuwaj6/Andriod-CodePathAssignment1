@@ -1,6 +1,7 @@
 package com.example.reneewu.codepathassignment1;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
@@ -63,15 +64,19 @@ public class MovieListAdapter extends BaseAdapter {
     @Override
     public int getItemViewType(int position) {
 
+        int orientation = mContext.getResources().getConfiguration().orientation;
+
         if (mData.results.get(position).vote_average < 5.0f) {
             return 0; //產生類型0的layout
-        } else {
+        } else if(orientation == Configuration.ORIENTATION_PORTRAIT){
             return 1; //產生類型1的layout
+        } else{
+            return 2;
         }
     }
 
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
+    public View getView(final int position, View convertView, ViewGroup parent) {
         // Get the data item for this position
         MovieObject item = (MovieObject) getItem(position);
 
@@ -84,8 +89,11 @@ public class MovieListAdapter extends BaseAdapter {
             //產生不同的item layout
             if (type == 0) {
                 convertView = LayoutInflater.from(mContext).inflate(R.layout.list_item_type1, parent, false);
-            } else {
+            } else if(type==1){
                 convertView = LayoutInflater.from(mContext).inflate(R.layout.list_item_type2, parent, false);
+            } else{
+
+                convertView = LayoutInflater.from(mContext).inflate(R.layout.list_item_popular_landscape, parent, false);
             }
 
             viewHolder = new ViewHolder(convertView);
@@ -118,17 +126,45 @@ public class MovieListAdapter extends BaseAdapter {
                     .placeholder(R.drawable.placeholder)
                     .error(R.drawable.error_placeholder)
                     .into(viewHolder.ivBasicImage);
+
+            //set this item click listener
+            convertView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    launchDetailsView(position);
+                }
+            });
         }
         else{
             String imageUri = "https://image.tmdb.org/t/p/w500" + item.backdrop_path;
 
-            Picasso.with(mContext).load(imageUri)
-                    //.fit()
-                    .resize(screenWidth, 0)
-                    .transform(new RoundedCornersTransformation(10, 10))
-                    .placeholder(R.drawable.placeholder)
-                    .error(R.drawable.error_placeholder)
-                    .into(viewHolder.ivBasicImage);
+            if(type==1){
+                Picasso.with(mContext).load(imageUri)
+                        //.fit()
+                        .resize(screenWidth, 0)
+                        .transform(new RoundedCornersTransformation(10, 10))
+                        .placeholder(R.drawable.placeholder)
+                        .error(R.drawable.error_placeholder)
+                        .into(viewHolder.ivBasicImage);
+            } else {
+                viewHolder.tvTitle.setText(item.title);
+                viewHolder.tvOverview.setText(item.overview);
+
+                Picasso.with(mContext).load(imageUri)
+                        .transform(new RoundedCornersTransformation(10, 10))
+                        .placeholder(R.drawable.placeholder)
+                        .error(R.drawable.error_placeholder)
+                        .into(viewHolder.ivBasicImage);
+            }
+
+            //set this item click listener
+            convertView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    launchYoutubeView(position);
+                }
+            });
+
         }
 
         // Return the completed view to render on screen
@@ -138,6 +174,19 @@ public class MovieListAdapter extends BaseAdapter {
 
     @Override
     public int getViewTypeCount() {
-        return 2; //這個ListView有兩種類型的item layout
+        return 3; //這個ListView有兩種類型的item layout
+    }
+
+    private void launchYoutubeView(int position) {
+        Intent i = new Intent(mContext, PlayYoutubeActivity.class);
+        i.putExtra("MovieId", mData.results.get(position).id);
+        // brings up the youtube activity
+        mContext.startActivity(i);
+    }
+
+    private void launchDetailsView(int position) {
+        Intent i = new Intent(mContext, DetailActivity.class);
+        i.putExtra("MovieObject", mData.results.get(position));
+        mContext.startActivity(i);
     }
 }
